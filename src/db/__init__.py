@@ -24,19 +24,19 @@ class Report(object):
     def date(self: Any) -> datetime:
         return self.__date
 
-    @property.setter
-    def date(self: Any, date: datetime) -> datetime:
-        self.__date = date
+    @date.setter
+    def date(self: Any, value: datetime) -> datetime:
+        self.__date = value
 
     @property
     def raw_data(self: Any) -> Dict[str, Any]:
         return self.__raw_data
 
-    @property.setter
-    def raw_data(self: Any, raw_data: Dict[str, Any]) -> None:
-        self.__raw_data = raw_data
+    @raw_data.setter
+    def raw_data(self: Any, value: Dict[str, Any]) -> None:
+        self.__raw_data = value
 
-    def serialize_data(self: Any) -> Tuple[str, bytes, ...]:
+    def serialize_data(self: Any) -> Tuple[str, bytes,]:
         date_str: str = self.__date.strftime(__DATETIME_FORMAT_PATTERN)
         raw_data_byte_array: bytes = dumps(raw_data)\
             .encode(__STRING_ENCODER_PATTERN)
