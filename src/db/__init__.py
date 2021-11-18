@@ -20,7 +20,7 @@ class Report(object):
         else:
             self.__raw_data = loads(raw_data)
 
-    @property.getter
+    @property
     def date(self: Any) -> datetime:
         return self.__date
 
@@ -28,7 +28,7 @@ class Report(object):
     def date(self: Any, date: datetime) -> datetime:
         self.__date = date
 
-    @property.getter
+    @property
     def raw_data(self: Any) -> Dict[str, Any]:
         return self.__raw_data
 

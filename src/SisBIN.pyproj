@@ -26,9 +26,6 @@
     <Compile Include="db\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="mocks\__init__.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="program.py" />
     <Compile Include="routers\__init__.py">
       <SubType>Code</SubType>
@@ -36,7 +33,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="db\" />
-    <Folder Include="mocks\" />
     <Folder Include="routers\" />
   </ItemGroup>
   <ItemGroup>
@@ -52,7 +48,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="requirements.txt" />
-    <Content Include="schema.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
