@@ -16,7 +16,7 @@ class Report(object):
         self.__date: datetime = datetime.strptime(date, self.__DATETIME_FORMAT_PATTERN)
         self.__raw_data: Dict[str, Any] = None
         if isinstance(raw_data, bytes):
-            self.__raw_data = loads(raw_data.decode(__STRING_ENCODER_PATTERN))
+            self.__raw_data = loads(raw_data.decode(self.__STRING_ENCODER_PATTERN))
         else:
             self.__raw_data = loads(raw_data)
 
@@ -37,10 +37,16 @@ class Report(object):
         self.__raw_data = value
 
     def serialize_data(self: Any) -> Tuple[str, bytes,]:
-        date_str: str = self.__date.strftime(__DATETIME_FORMAT_PATTERN)
-        raw_data_byte_array: bytes = dumps(raw_data)\
-            .encode(__STRING_ENCODER_PATTERN)
+        date_str: str = self.__date.strftime(self.__DATETIME_FORMAT_PATTERN)
+        raw_data_byte_array: bytes = dumps(self.raw_data)\
+            .encode(self.__STRING_ENCODER_PATTERN)
         return (date_str, raw_data_byte_array,)
+
+    def to_json(self: Any) -> Dict[str, Any]:
+        return {
+            'date': self.__date.strftime(self.__DATETIME_FORMAT_PATTERN),
+            'raw_data': self.__raw_data
+        }
 
 
 class MariaDbUtils(object):
@@ -58,11 +64,19 @@ class MariaDbUtils(object):
     @staticmethod
     def fetch_report(date: str) -> Report:
         with MariaDB() as mariadb:
-            return mariadb.execute(
+            report_data =  mariadb.execute(
                 query="SELECT `date`, `raw_data` FROM `report` WHERE `date`=?",
                 data=(date,),
                 is_select_statement=True
             )
+            fetched_item: Tuple[Any, ...] = report_data.fetchone()
+            if fetched_item:
+                # print(*fetched_item, sep=" ")
+                _, raw_data = fetched_item
+                report = Report(date, raw_data)
+                return report
+            else:
+                return None
 
     @staticmethod
     def remove_report(date: str) -> Literal[0, 1]:

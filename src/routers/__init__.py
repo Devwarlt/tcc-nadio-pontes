@@ -15,7 +15,10 @@ root_router: APIRouter = APIRouter(
 def get_report_callback(date: str) -> JSONResponse:
     report: Report = MariaDbUtils.fetch_report(date)
     json_reponse: JSONResponse\
-        = JSONResponse(report if report else {'data': "null"})
+        = JSONResponse(
+            report.to_json() if report\
+            else {'data': "null"}
+        )
     return json_reponse
 
 @root_router.post("/report", response_class=JSONResponse)
