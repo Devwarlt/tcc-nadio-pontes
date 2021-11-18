@@ -3,8 +3,7 @@
 from fastapi import *
 from fastapi.responses import *
 from typing import *
-from mocks import *
-
+from db import *
 
 router: APIRouter = APIRouter(
     responses={
@@ -14,4 +13,5 @@ router: APIRouter = APIRouter(
 
 @router.get("/report", response_class=JSONResponse)
 def get_report_callback(date: str) -> JSONResponse:
-    JSONResponse()
+    report: Report = MariaDBUtils.fetch_report(date)
+    json_reponse: JSONResponse = JSONResponse(report)
