@@ -1,5 +1,16 @@
 @ECHO OFF
 
-START C:\Program Files\MariaDB 10.6\bin\mysql.exe --defaults-file="C:\Program Files\MariaDB 10.6\data\my.ini" -u root -p toor
+SETLOCAL
+
+SET MARIADB_MAIN_PATH=C:\Program Files\MariaDB 10.6
+SET MARIADB_MYSQL_EXE_PATH=%MARIADB_MAIN_PATH%\bin\mysql.exe
+SET MARIADB_CONFIG_PATH=%MARIADB_MAIN_PATH%\data\my.ini
+SET MARIADB_PARAMS=-uroot -ptoor
+
+"%MARIADB_MYSQL_EXE_PATH%" --defaults-file="%MARIADB_CONFIG_PATH%" %MARIADB_PARAMS%
+
+PAUSE
+
+ENDLOCAL
 
 EXIT /B 0
