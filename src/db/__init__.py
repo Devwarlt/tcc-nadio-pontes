@@ -55,7 +55,7 @@ class MariaDbUtils(object):
 
     @staticmethod
     def store_new_report(report: Report) -> Literal[0, 1]:
-        with MariaDB() as mariadb:
+        with MariaDb() as mariadb:
             return mariadb.execute(
                 query="INSERT INTO `report` (`date`, `raw_data`) VALUES (?, ?)",
                 data=report.serialize_data()
@@ -63,7 +63,7 @@ class MariaDbUtils(object):
 
     @staticmethod
     def fetch_report(date: str) -> Report:
-        with MariaDB() as mariadb:
+        with MariaDb() as mariadb:
             report_data =  mariadb.execute(
                 query="SELECT `date`, `raw_data` FROM `report` WHERE `date`=?",
                 data=(date,),
@@ -80,14 +80,14 @@ class MariaDbUtils(object):
 
     @staticmethod
     def remove_report(date: str) -> Literal[0, 1]:
-        with MariaDB() as mariadb:
+        with MariaDb() as mariadb:
             return mariadb.execute(
                 query="DELETE FROM `report` WHERE `date`=?",
                 data=(date,)
             )
 
 
-class MariaDB(object):
+class MariaDb(object):
     def __init__(self: Any) -> Any:
         self.__db_params: Dict[str, Any] = {
             'user': "root",
