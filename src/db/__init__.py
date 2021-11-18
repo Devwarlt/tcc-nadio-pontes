@@ -8,9 +8,17 @@ from json import *
 
 
 class Report(object):
-    def __init__(self: Any, date: str, raw_data: bytes) -> Any:
-        self.__date: datetime = datetime.strptime(date, '%Y-%m-%d %H:%M:%S')
-        self.__raw_data: Dict[str, Any] = loads(raw_data.decode('utf-8'))
+    __DATETIME_FORMAT_PATTERN: str = "%Y-%m-%d %H:%M:%S"
+    __STRING_ENCODER_PATTERN: str = "utf-8"
+
+
+    def __init__(self: Any, date: str, raw_data: Union[bytes, str]) -> Any:
+        self.__date: datetime = datetime.strptime(date, self.__DATETIME_FORMAT_PATTERN)
+        self.__raw_data: Dict[str, Any] = None
+        if isinstance(raw_data, bytes):
+            self.__raw_data = loads(raw_data.decode(__STRING_ENCODER_PATTERN))
+        else:
+            self.__raw_data = loads(raw_data)
 
     @property.getter
     def date(self: Any) -> datetime:
@@ -28,20 +36,23 @@ class Report(object):
     def raw_data(self: Any, raw_data: Dict[str, Any]) -> None:
         self.__raw_data = raw_data
 
-    def raw_data_to_byte_array(self: Any) -> bytes:
-        return dumps(raw_data).encode('utf-8')
+    def serialize_data(self: Any) -> Tuple[str, bytes, ...]:
+        date_str: str = self.__date.strftime(__DATETIME_FORMAT_PATTERN)
+        raw_data_byte_array: bytes = dumps(raw_data)\
+            .encode(__STRING_ENCODER_PATTERN)
+        return (date_str, raw_data_byte_array,)
 
 
-class MariaDBUtils(object):
+class MariaDbUtils(object):
     def __init__(self: Any, *args, **kwargs) -> Any:
         raise SyntaxError("This is an utility class.")
 
     @staticmethod
-    def store_new_report(report: Report) -> None:
+    def store_new_report(report: Report) -> Literal[0, 1]:
         with MariaDB() as mariadb:
-            mariadb.execute(
+            return mariadb.execute(
                 query="INSERT INTO `report` (`date`, `raw_data`) VALUES (?, ?)",
-                data=(report.date, report.raw_data_to_byte_array())
+                data=report.serialize_data()
             )
 
     @staticmethod
@@ -54,9 +65,9 @@ class MariaDBUtils(object):
             )
 
     @staticmethod
-    def remove_report(date: str) -> Report:
+    def remove_report(date: str) -> Literal[0, 1]:
         with MariaDB() as mariadb:
-            mariadb.execute(
+            return mariadb.execute(
                 query="DELETE FROM `report` WHERE `date`=?",
                 data=(date,)
             )
@@ -87,17 +98,21 @@ class MariaDB(object):
 
     def execute(
         self: Any, query: str, data: Tuple[Any, ...], is_select_statement: bool = False
-    ) -> Any:
+    ) -> Union[Any, Literal[0, 1]]:
         db_cursor: Any = self.__db_connection.cursor()
         try:
             db_cursor.execute(query, data)
+            if is_select_statement:
+                return db_cursor
+            else:
+                self.__db_connection.commit()
+                return 0
         except Error as err:
             warn(
                 f"Error while committing changes to database: {err}",
                 RuntimeWarning
             )
-
-        if is_select_statement:
-            return db_cursor
-        else:
-            self.__db_connection.commit()
+            if is_select_statement:
+                return None
+            else:
+                return 1

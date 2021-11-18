@@ -7,6 +7,7 @@ from fastapi import *
 from logging import *
 from urllib3 import *
 from traceback import *
+from routers import *
 
 
 def __format_stacktrace(text: str, **kwargs: Dict[str, Any]) -> str:
@@ -35,9 +36,10 @@ if __name__ == "__main__":
 
     try:
         __api: FastAPI = FastAPI()
+        __api.include_router(root_router)
         run(
             app=__api,
-            host="0.0.0.0",
+            host="localhost",
             port=5000
         )
     except Exception:
