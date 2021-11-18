@@ -37,7 +37,7 @@ if __name__ == "__main__":
         __api: FastAPI = FastAPI()
         run(
             app=__api,
-            host="localhost",
+            host="0.0.0.0",
             port=5000
         )
     except Exception:
