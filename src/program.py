@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from time import *
 from typing import *
 from uvicorn import *

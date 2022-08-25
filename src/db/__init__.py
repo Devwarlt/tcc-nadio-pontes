@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 from mariadb import *
 from typing import *
 from warnings import *
