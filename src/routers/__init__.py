@@ -22,7 +22,7 @@ def get_report_callback(date: str) -> JSONResponse:
 @root_router.post("/report", response_class=JSONResponse)
 def post_report_callback(date: str, raw_data: str) -> JSONResponse:
     report: Report = Report(date, raw_data)
-    exit_code: Literal[0, 1] = MariaDbUtils.store_new_report(report)
+    exit_code: Literal[0, 1] = MariaDbUtils.add_report(report)
     json_reponse: JSONResponse = JSONResponse({"exit_code": exit_code})
     return json_reponse
 
