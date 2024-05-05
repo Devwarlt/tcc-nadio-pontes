@@ -1,11 +1,10 @@
-from tkinter.messagebox import WARNING
-from typing import Any
-from typing_extensions import deprecated
+from typing import *
 from mariadb import *
 from typing import *
 from warnings import *
 from datetime import *
 from json import *
+from settings import *
 
 
 class Report(object):
@@ -17,7 +16,7 @@ class Report(object):
         subsystem_id: str,
         instant_record: datetime,
         instant_load_following: float,
-    ) -> Any:
+    ):
         self.__subsystem_id: str = subsystem_id
         self.__instant_record: datetime = instant_record
         self.__instant_load_following: float = instant_load_following
@@ -74,7 +73,7 @@ class Report(object):
 
 
 class MariaDbUtils(object):
-    def __init__(self, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> Any:
+    def __init__(self, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]):
         raise SyntaxError("This is an utility class.")
 
     @staticmethod
@@ -89,11 +88,11 @@ class MariaDbUtils(object):
             )
 
     @staticmethod
-    def fetch_report(date: str) -> Report:
+    def fetch_report(instant_record: str) -> Report:
         with MariaDb() as mariadb:
             report_data = mariadb.execute(
-                query="SELECT * FROM `sin_subsystems_reports` WHERE `date`='?'",
-                data=date,
+                query="SELECT * FROM `sin_subsystems_reports` WHERE `instant_record`='?'",
+                instant_record=instant_record,
                 is_select_statement=True,
             )
             fetched_item: Tuple[Any, ...] = report_data.fetchone()
@@ -101,27 +100,21 @@ class MariaDbUtils(object):
 
 
 class MariaDb(object):
-    def __init__(self: Any) -> Any:
-        self.__db_params: Dict[str, Any] = {
-            "user": "root",
-            "password": "toor",
-            "host": "localhost",
-            "database": "sisbin",
-        }
-        self.__db_connection: connection = None
+    def __init__(self):
+        self.__db_connection: Connection = None
 
-    def __enter__(self: Any) -> Any:
+    def __enter__(self):
         try:
-            self.__db_connection: connection = connection(**self.__db_params)
+            self.__db_connection: Connection = Connection(**Settings.CONFIG["database"])
         except Error as err:
             warn(f"Error connecting to MariaDB Platform: {err}", RuntimeWarning)
         return self
 
-    def __exit__(self: Any, type: Any, value: Any, statement: Any) -> None:
+    def __exit__(self, type, value, statement) -> None:
         self.__db_connection.close()
 
     def execute(
-        self: Any, query: str, data: Tuple[Any, ...], is_select_statement: bool = False
+        self, query: str, data: Tuple[Any, ...], is_select_statement: bool = False
     ) -> Union[Any, Literal[0, 1]]:
         db_cursor: Any = self.__db_connection.cursor()
         try:
@@ -133,7 +126,4 @@ class MariaDb(object):
                 return 0
         except Error as err:
             warn(f"Error while committing changes to database: {err}", RuntimeWarning)
-            if is_select_statement:
-                return None
-            else:
-                return 1
+            return None if is_select_statement else 1
