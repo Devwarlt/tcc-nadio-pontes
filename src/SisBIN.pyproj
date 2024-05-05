@@ -26,7 +26,9 @@
     <Compile Include="db\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="settings.py" />
     <Compile Include="program.py" />
+    <Compile Include="routers\report\__init__.py" />
     <Compile Include="routers\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -34,6 +36,7 @@
   <ItemGroup>
     <Folder Include="db\" />
     <Folder Include="routers\" />
+    <Folder Include="routers\report\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="requirements.txt" />
