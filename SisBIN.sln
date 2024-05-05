@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31702.278
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "SisBIN", "src\SisBIN.pyproj", "{1EB27273-9896-46A5-BB7C-36AB7ABA1F1A}"
 EndProject
@@ -13,6 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Files", "Files", "{368B2433
 		run_mariadb_client.bat = run_mariadb_client.bat
 		run_mariadb_server.bat = run_mariadb_server.bat
 		schema.sql = schema.sql
+		settings.yaml = settings.yaml
 	EndProjectSection
 EndProject
 Global
