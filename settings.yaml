@@ -1,0 +1,8 @@
+database:
+    user: root
+    password: toor
+    host: localhost
+    database: sisbin
+app:
+    host: localhost
+    port: 5000
