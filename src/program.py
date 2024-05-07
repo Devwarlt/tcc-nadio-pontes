@@ -1,12 +1,14 @@
-from time import *
-from typing import *
-from uvicorn import *
-from fastapi import *
-from logging import *
-from urllib3 import *
-from traceback import *
-from routers import *
-from settings import *
+from concurrent.futures import Future, ThreadPoolExecutor
+from logging import INFO, Formatter, basicConfig, critical, info
+from threading import Event
+from time import sleep
+from traceback import format_exc
+from typing import Any, Dict, Literal
+from fastapi import FastAPI
+from urllib3 import disable_warnings
+from uvicorn import run
+from settings import Settings
+from routers import root_router
 
 
 def __format_stacktrace(text: str, **kwargs: Dict[str, Any]) -> str:
@@ -16,6 +18,12 @@ def __format_stacktrace(text: str, **kwargs: Dict[str, Any]) -> str:
         for key, value in args.items():
             message += f"\n- {key}: {value}"
     return message
+
+
+def __populate_database(event_flag: Event) -> None:
+    while not event_flag.is_set():
+        print("a")
+        sleep(1)
 
 
 if __name__ == "__main__":
@@ -36,18 +44,27 @@ if __name__ == "__main__":
 
     Settings.load("../settings.yaml")
 
-    try:
-        __api: FastAPI = FastAPI()
-        __api.include_router(root_router)
-        run(__api, **Settings.CONFIG["app"])
-    except Exception:
-        exit_code = 1
-        critical(
-            __format_stacktrace(
-                text="Unexpected process behaviour.", args={"Stacktrace": format_exc()}
-            )
+    with ThreadPoolExecutor(max_workers=1) as thread_executor:
+        populate_database_event: Event = Event()
+        populate_thread: Future = thread_executor.submit(
+            __populate_database, populate_database_event
         )
-    finally:
-        info(f"Exit code: {exit_code}")
-        sleep(1)
-        exit(exit_code)
+
+        try:
+            app: FastAPI = FastAPI()
+            app.include_router(root_router)
+            run(app, **Settings.CONFIG["app"])
+        except Exception:
+            exit_code = 1
+            critical(
+                __format_stacktrace(
+                    text="Unexpected process behaviour.",
+                    args={"Stacktrace": format_exc()},
+                )
+            )
+        finally:
+            populate_thread.cancel()
+            populate_database_event.set()
+
+            info(f"Exit code: {exit_code}")
+            exit(exit_code)
