@@ -6,3 +6,10 @@ database:
 app:
     host: localhost
     port: 5000
+open_data_ons:
+    url: https://dados.ons.org.br/dataset/carga-energia
+    download_dir: data
+web_scrapping:
+    driver_name: firefox
+    headless: true
+    binary_location: C:\Webdriver\bin\Firefox\geckodriver.exe
