@@ -26,12 +26,14 @@
     <Compile Include="db\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="ons_data_mining.py" />
     <Compile Include="settings.py" />
     <Compile Include="program.py" />
     <Compile Include="routers\report\__init__.py" />
     <Compile Include="routers\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="utils.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="db\" />
