@@ -9,17 +9,10 @@ from urllib3 import disable_warnings
 from uvicorn import run
 from settings import Settings
 from routers import root_router
+from utils import format_stacktrace
 
 
-def __format_stacktrace(text: str, **kwargs: Dict[str, Any]) -> str:
-    message: str = text
-    args: Dict[str, Any] = kwargs.pop("args", {})
-    if args:
-        for key, value in args.items():
-            message += f"\n- {key}: {value}"
-    return message
-
-
+# TODO!!!
 def __populate_database(event_flag: Event) -> None:
     while not event_flag.is_set():
         print("a")
@@ -57,7 +50,7 @@ if __name__ == "__main__":
         except Exception:
             exit_code = 1
             critical(
-                __format_stacktrace(
+                format_stacktrace(
                     text="Unexpected process behaviour.",
                     args={"Stacktrace": format_exc()},
                 )
