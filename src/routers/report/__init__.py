@@ -1,4 +1,4 @@
-from db import *
+from db import MariaDbUtils, Report
 
 
 def get_report(instant_record: str) -> Report:

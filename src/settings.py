@@ -1,5 +1,5 @@
-from typing import *
-from yaml import *
+from typing import Any, Dict, Tuple
+from yaml import safe_load
 
 
 class Settings(object):
