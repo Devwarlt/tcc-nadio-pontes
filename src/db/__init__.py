@@ -1,16 +1,15 @@
-from typing import *
-from mariadb import *
-from typing import *
-from warnings import *
-from datetime import *
-from json import *
-from settings import *
+from datetime import datetime
+from logging import warning
+from typing import Any, Dict, Tuple
+from mariadb import Connection, Cursor
+from settings import Settings
+
+import re
+
+__DATETIME_FORMAT_PATTERN: str = "%Y-%m-%d %H:%M:%S"
 
 
 class Report(object):
-    __DATETIME_FORMAT_PATTERN: str = "%Y-%m-%d %H:%M:%S"
-    # __STRING_ENCODER_PATTERN: str = "utf-8"
-
     def __init__(
         self,
         subsystem_id: str,
@@ -20,11 +19,6 @@ class Report(object):
         self.__subsystem_id: str = subsystem_id
         self.__instant_record: datetime = instant_record
         self.__instant_load_following: float = instant_load_following
-
-        # try:
-        #     self.__instant_record: datetime = datetime.strptime(date, self.__DATETIME_FORMAT_PATTERN)
-        # except ValueError:
-        #     self.__instant_record: datetime = datetime.strptime(f'{date} 00:00:00', self.__DATETIME_FORMAT_PATTERN)
 
     @property
     def subsystem_id(self) -> str:
@@ -52,9 +46,7 @@ class Report(object):
 
     def serialize_data(self) -> Tuple[str, str, float]:
         subsystem_id: str = self.__subsystem_id
-        instant_record: str = self.__instant_record.strftime(
-            self.__DATETIME_FORMAT_PATTERN
-        )
+        instant_record: str = self.__instant_record.strftime(__DATETIME_FORMAT_PATTERN)
         instant_load_following: float = self.__instant_load_following
         return (
             subsystem_id,
@@ -73,30 +65,65 @@ class Report(object):
 
 
 class MariaDbUtils(object):
-    def __init__(self, *args: Tuple[Any, ...], **kwargs: Dict[str, Any]):
+    def __init__(self, *args: Tuple[Any, ...]):
         raise SyntaxError("This is an utility class.")
 
     @staticmethod
-    def add_report(report: Report) -> Literal[0, 1]:
+    def add_report(report: Report) -> bool:
         with MariaDb() as mariadb:
             return mariadb.execute(
-                query="INSERT INTO `sin_subsystems_reports` (\
-                    `subsystem_id`, `instant_record`, \
-                    `instant_load_following`) \
-                    VALUES ('?', '?', ?)",
+                query="""
+                INSERT INTO `sin_subsystems_reports` (
+                    `subsystem_id`, `instant_record`,
+                    `instant_load_following`
+                ) VALUES ('?', '?', ?)
+                """,
                 data=report.serialize_data(),
             )
 
     @staticmethod
-    def fetch_report(instant_record: str) -> Report:
+    def is_empty_reports() -> bool:
         with MariaDb() as mariadb:
-            report_data = mariadb.execute(
+            cursor: Cursor = mariadb.execute(
+                query="SELECT COUNT(`id`) FROM `sin_subsystems_reports`"
+            )
+            cursor_results: Tuple[int, ...] = cursor.fetchone()
+            (count_reports,) = cursor_results
+            return count_reports > 0
+
+    @staticmethod
+    def fetch_report(instant_record: str) -> Report | None:
+        with MariaDb() as mariadb:
+            cursor: Cursor = mariadb.execute(
                 query="SELECT * FROM `sin_subsystems_reports` WHERE `instant_record`='?'",
                 instant_record=instant_record,
-                is_select_statement=True,
             )
-            fetched_item: Tuple[Any, ...] = report_data.fetchone()
-            return Report(*fetched_item) if fetched_item else None
+            cursor_results: Tuple[str, datetime, float] = cursor.fetchone()
+            return Report(*cursor_results) if cursor_results.__len__() > 0 else None
+
+    @staticmethod
+    def fetch_latest_instant_record() -> datetime:
+        if MariaDbUtils.is_empty_reports():
+            return datetime.min
+
+        with MariaDb() as mariadb:
+            cursor: Cursor = mariadb.execute(
+                query="SELECT MAX(`instant_record`) FROM `sin_subsystems_reports`"
+            )
+            cursor_results: Tuple[datetime, ...] = cursor.fetchone()
+            if cursor_results.__len__() == 0:
+                return datetime.min
+
+            (instant_record,) = cursor_results
+            instant_record_str: str = instant_record.__str__()
+            try:
+                return datetime.strptime(instant_record_str, __DATETIME_FORMAT_PATTERN)
+            except ValueError:
+                return datetime.strptime(
+                    f"{instant_record_str} 00:00:00", __DATETIME_FORMAT_PATTERN
+                )
+            except:
+                return datetime.min
 
 
 class MariaDb(object):
@@ -106,24 +133,25 @@ class MariaDb(object):
     def __enter__(self):
         try:
             self.__db_connection: Connection = Connection(**Settings.CONFIG["database"])
-        except Error as err:
-            warn(f"Error connecting to MariaDB Platform: {err}", RuntimeWarning)
+        except Exception as err:
+            warning(f"Error connecting to MariaDB Platform: {err}", RuntimeWarning)
         return self
 
-    def __exit__(self, type, value, statement) -> None:
+    def __exit__(self, *args: Tuple[Any, ...]) -> None:
         self.__db_connection.close()
 
-    def execute(
-        self, query: str, data: Tuple[Any, ...], is_select_statement: bool = False
-    ) -> Union[Any, Literal[0, 1]]:
-        db_cursor: Any = self.__db_connection.cursor()
+    def execute(self, query: str, *data: Tuple[Any, ...]) -> Cursor | bool:
+        is_select_statement: bool = bool(re.match(r"^(select).*", query.lower()))
+        db_cursor: Cursor = self.__db_connection.cursor()
         try:
             db_cursor.execute(query, data)
             if is_select_statement:
                 return db_cursor
             else:
                 self.__db_connection.commit()
-                return 0
-        except Error as err:
-            warn(f"Error while committing changes to database: {err}", RuntimeWarning)
-            return None if is_select_statement else 1
+                return True
+        except Exception as err:
+            warning(
+                f"Error while committing changes to database: {err}", RuntimeWarning
+            )
+            return False
