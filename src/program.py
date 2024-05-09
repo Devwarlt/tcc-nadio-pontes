@@ -1,22 +1,31 @@
 from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import timedelta
 from logging import INFO, Formatter, basicConfig, critical, info
+from os import _exit
 from threading import Event
 from time import sleep
 from traceback import format_exc
-from typing import Any, Dict, Literal
+from typing import Any, Dict
 from fastapi import FastAPI
 from urllib3 import disable_warnings
 from uvicorn import run
 from settings import Settings
 from routers import root_router
 from utils import format_stacktrace
+from ons_data_mining import trigger_bot_routine
+
+# `os._exit(n)` exit codes:
+#   - https://docs.python.org/3/library/os.html#os._exit
+EX_OK: int = 0
+EX_SOFTWARE: int = 70
 
 
-# TODO!!!
-def __populate_database(event_flag: Event) -> None:
+def __update_open_data(event_flag: Event) -> None:
+    web_scrapping_settings: Dict[str, Any] = Settings.CONFIG["web_scrapping"]
+    fetch_wait_time_settings: Dict[str, Any] = web_scrapping_settings["fetch_wait_time"]
     while not event_flag.is_set():
-        print("a")
-        sleep(1)
+        trigger_bot_routine(web_scrapping_settings)
+        sleep(timedelta(**fetch_wait_time_settings).total_seconds())
 
 
 if __name__ == "__main__":
@@ -31,24 +40,24 @@ if __name__ == "__main__":
     basicConfig(**log_config)
     disable_warnings()
 
-    exit_code: Literal[0, 1] = 0
+    exit_status_flag: int = EX_OK
 
     info("Loading application settings...")
 
     Settings.load("../settings.yaml")
 
     with ThreadPoolExecutor(max_workers=1) as thread_executor:
-        populate_database_event: Event = Event()
-        populate_thread: Future = thread_executor.submit(
-            __populate_database, populate_database_event
+        update_open_data_event: Event = Event()
+        update_open_data_thread: Future = thread_executor.submit(
+            __update_open_data, update_open_data_event
         )
 
         try:
             app: FastAPI = FastAPI()
             app.include_router(root_router)
             run(app, **Settings.CONFIG["app"])
-        except Exception:
-            exit_code = 1
+        except:
+            exit_status_flag = EX_SOFTWARE
             critical(
                 format_stacktrace(
                     text="Unexpected process behaviour.",
@@ -56,8 +65,8 @@ if __name__ == "__main__":
                 )
             )
         finally:
-            populate_thread.cancel()
-            populate_database_event.set()
+            update_open_data_thread.cancel()
+            update_open_data_event.set()
 
-            info(f"Exit code: {exit_code}")
-            exit(exit_code)
+            info(f"Exit status: {exit_status_flag}")
+            _exit(exit_status_flag)
