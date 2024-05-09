@@ -1,36 +1,53 @@
-import os
+from datetime import datetime, timedelta
 from traceback import format_exc
 from numpy import ndarray
-import pandas
-import re
-import subprocess
-import requests
-import json
-
 from typing import Any, Dict, List
-
-from splinter.driver import DriverAPI
+from db import MariaDbUtils
 from settings import Settings
 from logging import fatal, info, warning
 from selenium.webdriver import FirefoxOptions
 from splinter import Browser
 from http import HTTPStatus
 from http.client import responses
-from utils import format_stacktrace
+from utils import brt_now, format_stacktrace
 
+import os
+import pandas
+import re
+import requests
+import json
 
 __NOT_SET: str = "<ARGUMENT NOT SET>"
 __REGEX_PATTERN_FILENAME: str = r"(CARGA_ENERGIA_)[0-9]{4,}"
 
 
-def fetch_remote_data() -> None:
+def trigger_bot_routine(web_scrapping_settings: Dict[str, Any]) -> None:
+    fetch_period_threshold_settings: Dict[str, Any] = web_scrapping_settings[
+        "fetch_period_threshold"
+    ]
+    latest_instant_record: datetime = MariaDbUtils.fetch_latest_instant_record()
+    if brt_now().date() < latest_instant_record.date() + timedelta(
+        **fetch_period_threshold_settings
+    ):
+        return
+
+    geckodriver_options: FirefoxOptions = FirefoxOptions()
+    geckodriver_options.binary_location = web_scrapping_settings.get(
+        "binary_location", __NOT_SET
+    )
+    bot_options: Dict[str, Any] = {
+        "driver_name": web_scrapping_settings.get("driver_name", __NOT_SET),
+        "headless": web_scrapping_settings.get("headless", __NOT_SET),
+        "options": geckodriver_options,
+    }
     open_data_ons_settings: Dict[str, Any] = Settings.CONFIG["open_data_ons"]
-    source_dir: str = open_data_ons_settings.get("download_dir", __NOT_SET)
+    source_dir: str = open_data_ons_settings["download_dir"]
+    source_dir = os.path.join(os.getcwd(), source_dir)
     if not os.path.exists(source_dir):
         os.mkdir(source_dir)
 
     source_url: str = open_data_ons_settings.get("url", __NOT_SET)
-    bot = __configure_browser_automation_bot()
+    bot = Browser(**bot_options)
     bot.visit(source_url)
 
     csv_links: List[str] = [
@@ -68,7 +85,7 @@ def fetch_remote_data() -> None:
         load_dataframe: pandas.DataFrame = pandas.read_csv(csv_file_path, sep=";")
         load_subsystem_ids: ndarray = load_dataframe["id_subsistema"].unique()
         load_subsystem_names: ndarray = load_dataframe["nom_subsistema"].unique()
-        load_entries: List[Dict[str, str | str | List[str, float]]] = {}
+        load_entries: List[Dict[str, str | str | List[str, float]]] = []
 
         for load_subsystem_id, load_subsystem_name in zip(
             load_subsystem_ids, load_subsystem_names
@@ -126,17 +143,3 @@ def fetch_remote_data() -> None:
         with open(os.path.join(source_dir, json_filename), "w") as json_file:
             info(f"Successfully created file: {json_filename}")
             json_file.write(json.dumps(load_entries, indent=True))
-
-
-def __configure_browser_automation_bot() -> DriverAPI:
-    web_scrapping_settings: Dict[str, Any] = Settings.CONFIG["web_scrapping"]
-    geckodriver_options: FirefoxOptions = FirefoxOptions()
-    geckodriver_options.binary_location = web_scrapping_settings.get(
-        "binary_location", __NOT_SET
-    )
-    bot_options: Dict[str, Any] = {
-        "driver_name": web_scrapping_settings.get("driver_name", __NOT_SET),
-        "headless": web_scrapping_settings.get("headless", __NOT_SET),
-        "options": geckodriver_options,
-    }
-    return Browser(**bot_options)
