@@ -132,3 +132,5 @@ dmypy.json
 # VS Community related stuffs
 **/.vs/**
 notebooks/data/**
+**/.temp/**
+**/*.yaml
