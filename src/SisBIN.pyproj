@@ -13,6 +13,7 @@
     <RootNamespace>br.projecao.tcc.sisbin</RootNamespace>
     <IsWindowsApplication>False</IsWindowsApplication>
     <InterpreterId>MSBuild|venv|$(MSBuildProjectFullPath)</InterpreterId>
+    <SuppressPackageInstallationPrompt>True</SuppressPackageInstallationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
