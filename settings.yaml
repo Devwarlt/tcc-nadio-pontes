@@ -8,8 +8,15 @@ app:
     port: 5000
 open_data_ons:
     url: https://dados.ons.org.br/dataset/carga-energia
-    download_dir: data
+    download_dir: ../.temp
 web_scrapping:
+    # Both 'fetch' variables follows current documentation about
+    # 'datetime->timedelta' __init__ arguments on scope:
+    #   - https://docs.python.org/3.10/library/datetime.html#timedelta-objects
+    fetch_wait_time:
+        minutes: 15
+    fetch_period_threshold:
+        hours: 24
     driver_name: firefox
     headless: true
-    binary_location: C:\Webdriver\bin\Firefox\geckodriver.exe
+    binary_location: <webdriver_binary_path>
