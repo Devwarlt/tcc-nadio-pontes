@@ -112,14 +112,28 @@ class MariaDbUtils(object):
             return count_reports == 0
 
     @staticmethod
-    def fetch_report(instant_record: str) -> Report | None:
+    def fetch_subsystem_name_by_id(subsystem_id: str) -> str:
         with MariaDb() as mariadb:
             cursor: Cursor = mariadb.execute(
-                query="SELECT * FROM `sin_subsystems_reports` WHERE `instant_record`='?'",
-                instant_record=instant_record,
+                query="SELECT `name` FROM `sin_subsystems` WHERE `id`=?",
+                data=(subsystem_id,),
             )
-            cursor_results: Tuple[str, datetime, float] = cursor.fetchone()
-            return Report(*cursor_results) if cursor_results.__len__() > 0 else None
+            cursor_results: Tuple[str, ...] = cursor.fetchone()
+            if cursor_results.__len__() == 0:
+                return None
+
+            (subsystem_name,) = cursor_results
+            return subsystem_name
+
+    @staticmethod
+    def fetch_reports_by_subsystem_id(subsystem_id: str) -> List[Report]:
+        with MariaDb() as mariadb:
+            cursor: Cursor = mariadb.execute(
+                query="SELECT * FROM `sin_subsystems_reports` WHERE `subsystem_id`=?",
+                data=(subsystem_id,),
+            )
+            for args in cursor:
+                yield Report(*args[1:])
 
     @staticmethod
     def fetch_distinct_instant_record_years() -> List[int]:
@@ -174,7 +188,6 @@ class MariaDb(object):
             if is_select_statement:
                 return db_cursor
             else:
-                self.__db_connection.commit()
                 return True
         except Exception as err:
             warning(
