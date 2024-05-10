@@ -6,7 +6,7 @@ USE `sisbin`;
 
 CREATE TABLE IF NOT EXISTS `sin_subsystems` (
 	`id` VARCHAR(2) NOT NULL,
-	`name` VARCHAR(64) NOT NULL
+	`name` VARCHAR(64) NOT NULL,
 	PRIMARY KEY (`id`)
 ) Engine=InnoDB;
 
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `sin_subsystems_reports` (
 	`id` INT AUTO_INCREMENT,
 	`subsystem_id` VARCHAR(2) NOT NULL,
 	`instant_record` DATETIME NOT NULL,
-	`instant_load_following` FLOAT NOT NULL
+	`instant_load_following` FLOAT NOT NULL,
 	PRIMARY KEY (`id`)
 ) Engine=InnoDB;
 
