@@ -17,7 +17,7 @@ class MockUtils(object):
     ) -> List[Dict[str, datetime | float]]:
         incident_foresight_results: List[Dict[str, datetime | float]] = []
         total_entries: int = (time_end - time_start).days
-        for i in range(total_entries):
+        for i in range(total_entries + 1):
             incident_foresight_results.append(
                 {
                     "date": (time_start + timedelta(days=i)).strftime(DATETIME_FORMAT),
