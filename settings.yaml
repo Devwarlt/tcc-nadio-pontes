@@ -3,9 +3,15 @@ database:
     password: toor
     host: localhost
     database: sisbin
+    autocommit: true
 app:
     host: localhost
     port: 5000
+api_responses:
+# Example:
+#   {404: {"description": "Not found!"}}
+    404:
+        description:
 open_data_ons:
     url: https://dados.ons.org.br/dataset/carga-energia
     download_dir: ../.temp
@@ -15,8 +21,10 @@ web_scrapping:
     #   - https://docs.python.org/3.10/library/datetime.html#timedelta-objects
     fetch_wait_time:
         minutes: 15
+    # Recommended 'fetch_period_threshold' is above 48 hours.
+    # The main reason is due manual update of latest dataset.
     fetch_period_threshold:
-        hours: 24
+        hours: 48
     driver_name: firefox
     headless: true
-    binary_location: <webdriver_binary_path>
+    binary_location: C:\Webdriver\bin\Firefox\geckodriver.exe
