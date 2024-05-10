@@ -1,40 +1,30 @@
+from datetime import datetime, timedelta
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from db import MariaDbUtils, Report
-from routers.report import get_report
+from mock import MockUtils
 
-
-root_router: APIRouter = APIRouter(responses={404: {"description": "Not found!"}})
+root_router: APIRouter = APIRouter()
 
 # FastAPI - Declare Request Example Data:
 # https://fastapi.tiangolo.com/tutorial/schema-extra-example/
 
 
-@root_router.get("/report", response_class=JSONResponse)
-def get_report_callback(instant_record: str) -> JSONResponse:
-    report: Report = get_report(instant_record)
-    json_reponse: JSONResponse = JSONResponse(
-        report.to_json() if report else {"data": None}
+@root_router.get(
+    "/incident_foresight",
+    description="""
+        Retrives all incident foresight predictions between 'start_period (required)' and 'end_period'
+        (default: if not set, then API will calculate next upcoming 7 days since 'start_period' as
+        reference).
+        """,
+    response_class=JSONResponse,
+)
+def get_incident_foresight_callback(
+    start_period: datetime = datetime.today().date(),
+    end_period: datetime | None = None,
+) -> JSONResponse:
+    if not end_period:
+        end_period = start_period + timedelta(days=7)
+
+    return JSONResponse(
+        MockUtils.get_random_incident_foresight_results(start_period, end_period)
     )
-    return json_reponse
-
-
-@root_router.post("/report", response_class=JSONResponse)
-def post_report_callback(date: str, raw_data: str) -> JSONResponse:
-    report: Report = Report(date, raw_data)
-    is_success: bool = MariaDbUtils.add_report(report)
-    json_reponse: JSONResponse = JSONResponse({"is_success": is_success})
-    return json_reponse
-
-
-@root_router.delete("/report", response_class=JSONResponse)
-def delete_report_callback(date: str) -> JSONResponse:
-    is_success: bool = MariaDbUtils.remove_report(date)
-    json_reponse: JSONResponse = JSONResponse({"is_success": is_success})
-    return json_reponse
-
-
-@root_router.get("/incident_foresight", response_class=JSONResponse)
-def get_incident_foresight_callback(date: str) -> JSONResponse:
-    json_reponse: JSONResponse = JSONResponse({"exit_code": "TODO!"})
-    return json_reponse
