@@ -27,10 +27,10 @@
     <Compile Include="db\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="mock\__init__.py" />
     <Compile Include="ons_data_mining.py" />
     <Compile Include="settings.py" />
     <Compile Include="program.py" />
-    <Compile Include="routers\report\__init__.py" />
     <Compile Include="routers\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -38,11 +38,8 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="db\" />
+    <Folder Include="mock\" />
     <Folder Include="routers\" />
-    <Folder Include="routers\report\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="venv\">
@@ -54,6 +51,9 @@
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
       <Architecture>X64</Architecture>
     </Interpreter>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
