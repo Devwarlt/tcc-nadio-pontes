@@ -1,52 +1,117 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from traceback import format_exc
 from numpy import ndarray
 from typing import Any, Dict, List
-from db import MariaDbUtils
-from settings import Settings
+from db import MariaDbUtils, Report
 from logging import fatal, info, warning
 from selenium.webdriver import FirefoxOptions
 from splinter import Browser
 from http import HTTPStatus
 from http.client import responses
-from utils import brt_now, format_stacktrace
+from utils import (
+    NOT_SET,
+    REGEX_PATTERN_FILENAME,
+    REGEX_PATTERN_FILENAME_YEAR,
+    TIMEZONE_DIFFERENCE,
+    format_stacktrace,
+    brt_now,
+    strfdelta,
+)
 
 import os
 import pandas
 import re
 import requests
 import json
-
-__NOT_SET: str = "<ARGUMENT NOT SET>"
-__REGEX_PATTERN_FILENAME: str = r"(CARGA_ENERGIA_)[0-9]{4,}"
+import glob
 
 
-def trigger_bot_routine(web_scrapping_settings: Dict[str, Any]) -> None:
+def cleanup_all_downloaded_resources(source_dir: str) -> None:
+    info(f'Removing all temporarily resources from path "{source_dir}"...')
+
+    for file in glob.glob(os.path.join(source_dir, "*")):
+        os.remove(file)
+
+
+def update_all_open_data_reports(source_dir: str) -> None:
+    info(f"Synchronizing fetched reports and updating internal data...")
+
+    json_file_paths: List[str] = [
+        os.path.join(source_dir, file)
+        for file in os.listdir(source_dir)
+        if file.endswith(".json")
+    ]
+    for json_file_path in json_file_paths:
+        with open(json_file_path, "r") as json_file:
+            json_raw_content: str = json_file.read()
+            filename_year: int = int(
+                re.search(REGEX_PATTERN_FILENAME_YEAR, json_file_path).group()
+            )
+            load_entries: List[Dict[str, str | str | List[Dict[str, str | float]]]] = (
+                json.loads(json_raw_content)
+            )
+
+            info(f'Updating reports from year "{filename_year}"...')
+
+            for load_entry in load_entries:
+                subsystem_id, subsystem_name, subsystem_load_records = (
+                    load_entry.values()
+                )
+                subsystem_reports: List[Report] = [
+                    Report(subsystem_id, *subsystem_load_record.values())
+                    for subsystem_load_record in subsystem_load_records
+                ]
+                count_entries: int = subsystem_reports.__len__()
+
+                info(
+                    f"\t* [{subsystem_name} - year: {filename_year}] Entries: {count_entries}"
+                )
+
+                if MariaDbUtils.add_reports(subsystem_reports):
+                    info("\t* Successfully added all reports.")
+                else:
+                    fatal("\t* Unable to add data subsystem reports!")
+
+
+def fetch_open_data_reports(
+    open_data_ons_settings: Dict[str, Any],
+    web_scrapping_settings: Dict[str, Any],
+    source_dir: str,
+) -> None:
     fetch_period_threshold_settings: Dict[str, Any] = web_scrapping_settings[
         "fetch_period_threshold"
     ]
+    current_date: datetime = brt_now()
     latest_instant_record: datetime = MariaDbUtils.fetch_latest_instant_record()
-    if brt_now().date() < latest_instant_record.date() + timedelta(
-        **fetch_period_threshold_settings
+    if (
+        current_date.day
+        <= (latest_instant_record + timedelta(**fetch_period_threshold_settings)).day
     ):
+        next_check_eta: timedelta = current_date - (
+            latest_instant_record + timedelta(**fetch_period_threshold_settings)
+        )
+        current_date = current_date.replace(tzinfo=timezone.utc)
+        timezone_hours, timezone_minutes = TIMEZONE_DIFFERENCE.values()
+        info(
+            "All reports are up to date, next check within:"
+            + f' {strfdelta(next_check_eta, "{H:02}h {M:02}m {S:02}s")}'
+            + f" {timezone_hours:+03d}:{timezone_minutes:02d}"
+            + f' {current_date.strftime("%Z")}'
+        )
         return
+
+    info("Pending reports to update, fetching remote Open Data servers...")
 
     geckodriver_options: FirefoxOptions = FirefoxOptions()
     geckodriver_options.binary_location = web_scrapping_settings.get(
-        "binary_location", __NOT_SET
+        "binary_location", NOT_SET
     )
     bot_options: Dict[str, Any] = {
-        "driver_name": web_scrapping_settings.get("driver_name", __NOT_SET),
-        "headless": web_scrapping_settings.get("headless", __NOT_SET),
+        "driver_name": web_scrapping_settings.get("driver_name", NOT_SET),
+        "headless": web_scrapping_settings.get("headless", NOT_SET),
         "options": geckodriver_options,
     }
-    open_data_ons_settings: Dict[str, Any] = Settings.CONFIG["open_data_ons"]
-    source_dir: str = open_data_ons_settings["download_dir"]
-    source_dir = os.path.join(os.getcwd(), source_dir)
-    if not os.path.exists(source_dir):
-        os.mkdir(source_dir)
-
-    source_url: str = open_data_ons_settings.get("url", __NOT_SET)
+    source_url: str = open_data_ons_settings.get("url", NOT_SET)
     bot = Browser(**bot_options)
     bot.visit(source_url)
 
@@ -56,12 +121,24 @@ def trigger_bot_routine(web_scrapping_settings: Dict[str, Any]) -> None:
 
     bot.quit()
 
-    info(f'Downloading CSV files to path "{source_dir}":')
+    info(f'Downloading CSV files to path "{source_dir}"...')
+
+    distinct_instant_record_years: List[int] = (
+        MariaDbUtils.fetch_distinct_instant_record_years()
+    )
+    if not distinct_instant_record_years:
+        distinct_instant_record_years = []
 
     for csv_link in csv_links:
         csv_filename: str = re.search(
-            f"{__REGEX_PATTERN_FILENAME}(.csv)", csv_link
+            f"{REGEX_PATTERN_FILENAME}(.csv)", csv_link
         ).group()
+        csv_filename_year: int = int(
+            re.search(REGEX_PATTERN_FILENAME_YEAR, csv_filename).group()
+        )
+        if csv_filename_year in distinct_instant_record_years:
+            continue
+
         response: requests.Response = requests.get(csv_link)
         if response.status_code == HTTPStatus.OK:
             info(
@@ -103,7 +180,7 @@ def trigger_bot_routine(web_scrapping_settings: Dict[str, Any]) -> None:
 
         load_instant_records: ndarray = load_dataframe["din_instante"].unique()
         json_filename: str = (
-            f"{re.search(__REGEX_PATTERN_FILENAME, csv_file_path).group()}.json"
+            f"{re.search(REGEX_PATTERN_FILENAME, csv_file_path).group()}.json"
         )
 
         for load_instant_record in load_instant_records:
