@@ -1,23 +1,35 @@
 from datetime import datetime
 from logging import warning
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 from mariadb import Connection, Cursor
 from settings import Settings
+from utils import DATETIME_FORMAT, brt_now
 
 import re
-
-__DATETIME_FORMAT_PATTERN: str = "%Y-%m-%d %H:%M:%S"
 
 
 class Report(object):
     def __init__(
         self,
         subsystem_id: str,
-        instant_record: datetime,
+        instant_record: datetime | str,
         instant_load_following: float,
     ):
         self.__subsystem_id: str = subsystem_id
-        self.__instant_record: datetime = instant_record
+        self.__instant_record: datetime = datetime.min
+
+        if isinstance(instant_record, datetime):
+            self.__instant_record = instant_record
+        else:
+            try:
+                self.__instant_record = datetime.strptime(
+                    instant_record, DATETIME_FORMAT
+                )
+            except ValueError:
+                self.__instant_record = datetime.strptime(
+                    f"{instant_record} 00:00:00", DATETIME_FORMAT
+                )
+
         self.__instant_load_following: float = instant_load_following
 
     @property
@@ -44,22 +56,17 @@ class Report(object):
     def instant_load_following(self, value: float) -> None:
         self.__instant_load_following = value
 
-    def serialize_data(self) -> Tuple[str, str, float]:
-        subsystem_id: str = self.__subsystem_id
-        instant_record: str = self.__instant_record.strftime(__DATETIME_FORMAT_PATTERN)
-        instant_load_following: float = self.__instant_load_following
+    def serialize_data(self) -> Tuple[str, datetime, float]:
         return (
-            subsystem_id,
-            instant_record,
-            instant_load_following,
+            self.__subsystem_id,
+            self.__instant_record,
+            self.__instant_load_following,
         )
 
     def to_json(self) -> Dict[str, Any]:
         return {
             "subsystem_id": self.__subsystem_id,
-            "instant_record": self.__instant_record.strftime(
-                self.__DATETIME_FORMAT_PATTERN
-            ),
+            "instant_record": self.__instant_record.strftime(DATETIME_FORMAT),
             "instant_load_following": self.__instant_load_following,
         }
 
@@ -76,9 +83,22 @@ class MariaDbUtils(object):
                 INSERT INTO `sin_subsystems_reports` (
                     `subsystem_id`, `instant_record`,
                     `instant_load_following`
-                ) VALUES ('?', '?', ?)
+                ) VALUES (?, ?, ?)
                 """,
                 data=report.serialize_data(),
+            )
+
+    @staticmethod
+    def add_reports(reports: List[Report]) -> bool:
+        with MariaDb() as mariadb:
+            return mariadb.executemany(
+                query="""
+                INSERT INTO `sin_subsystems_reports` (
+                    `subsystem_id`, `instant_record`,
+                    `instant_load_following`
+                ) VALUES (?, ?, ?)
+                """,
+                data=[report.serialize_data() for report in reports],
             )
 
     @staticmethod
@@ -89,7 +109,7 @@ class MariaDbUtils(object):
             )
             cursor_results: Tuple[int, ...] = cursor.fetchone()
             (count_reports,) = cursor_results
-            return count_reports > 0
+            return count_reports == 0
 
     @staticmethod
     def fetch_report(instant_record: str) -> Report | None:
@@ -100,6 +120,20 @@ class MariaDbUtils(object):
             )
             cursor_results: Tuple[str, datetime, float] = cursor.fetchone()
             return Report(*cursor_results) if cursor_results.__len__() > 0 else None
+
+    @staticmethod
+    def fetch_distinct_instant_record_years() -> List[int]:
+        if MariaDbUtils.is_empty_reports():
+            yield None
+
+        with MariaDb() as mariadb:
+            current_year: int = brt_now().year
+            cursor: Cursor = mariadb.execute(
+                query="SELECT DISTINCT YEAR(`instant_record`) FROM `sin_subsystems_reports`"
+            )
+            for (year,) in cursor:
+                if year < current_year:
+                    yield year
 
     @staticmethod
     def fetch_latest_instant_record() -> datetime:
@@ -115,15 +149,7 @@ class MariaDbUtils(object):
                 return datetime.min
 
             (instant_record,) = cursor_results
-            instant_record_str: str = instant_record.__str__()
-            try:
-                return datetime.strptime(instant_record_str, __DATETIME_FORMAT_PATTERN)
-            except ValueError:
-                return datetime.strptime(
-                    f"{instant_record_str} 00:00:00", __DATETIME_FORMAT_PATTERN
-                )
-            except:
-                return datetime.min
+            return instant_record
 
 
 class MariaDb(object):
@@ -140,11 +166,11 @@ class MariaDb(object):
     def __exit__(self, *args: Tuple[Any, ...]) -> None:
         self.__db_connection.close()
 
-    def execute(self, query: str, *data: Tuple[Any, ...]) -> Cursor | bool:
+    def execute(self, query: str, data: Sequence = ()) -> Cursor | bool:
         is_select_statement: bool = bool(re.match(r"^(select).*", query.lower()))
         db_cursor: Cursor = self.__db_connection.cursor()
         try:
-            db_cursor.execute(query, data)
+            db_cursor.execute(query.strip(), data)
             if is_select_statement:
                 return db_cursor
             else:
@@ -153,5 +179,17 @@ class MariaDb(object):
         except Exception as err:
             warning(
                 f"Error while committing changes to database: {err}", RuntimeWarning
+            )
+            return False
+
+    def executemany(self, query: str, data: List[Sequence]) -> bool:
+        db_cursor: Cursor = self.__db_connection.cursor()
+        try:
+            db_cursor.executemany(query.strip(), data)
+            return True
+        except Exception as err:
+            warning(
+                f"Error while committing massive changes to database: {err}",
+                RuntimeWarning,
             )
             return False
