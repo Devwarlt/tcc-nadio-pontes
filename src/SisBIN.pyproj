@@ -27,6 +27,7 @@
     <Compile Include="db\__init__.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="forecast\__init__.py" />
     <Compile Include="mock\__init__.py" />
     <Compile Include="ons_data_mining.py" />
     <Compile Include="settings.py" />
@@ -39,6 +40,7 @@
   <ItemGroup>
     <Folder Include="db\" />
     <Folder Include="mock\" />
+    <Folder Include="forecast\" />
     <Folder Include="routers\" />
   </ItemGroup>
   <ItemGroup>
