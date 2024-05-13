@@ -29,6 +29,11 @@ def brt_now() -> datetime:
     return datetime.utcnow() + timedelta(**TIMEZONE_DIFFERENCE)
 
 
+def number_of_days_between(start_period: datetime, final_period: datetime) -> int:
+    difference: timedelta = final_period - start_period
+    return difference.days
+
+
 def strfdelta(tdelta, fmt="{D:02}d {H:02}h {M:02}m {S:02}s", inputtype="timedelta"):
     """
     Source: https://stackoverflow.com/a/42320260
