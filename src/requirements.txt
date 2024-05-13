@@ -58,3 +58,16 @@ uvicorn==0.29.0
 watchfiles==0.21.0
 websockets==12.0
 wsproto==1.2.0
+cmdstanpy==1.2.2
+contourpy==1.2.1
+cycler==0.12.1
+fonttools==4.51.0
+holidays==0.48
+importlib_resources==6.4.0
+kiwisolver==1.4.5
+matplotlib==3.8.4
+pillow==10.3.0
+prophet==1.1.5
+pyparsing==3.1.2
+stanio==0.5.0
+tqdm==4.66.4
