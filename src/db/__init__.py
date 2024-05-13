@@ -2,6 +2,7 @@ from datetime import datetime
 from logging import warning
 from typing import Any, Dict, List, Sequence, Tuple
 from mariadb import Connection, Cursor
+from pandas import DataFrame
 from settings import Settings
 from utils import DATETIME_FORMAT, brt_now
 
@@ -71,22 +72,21 @@ class Report(object):
         }
 
 
-class MariaDbUtils(object):
+class ReportUtils(object):
     def __init__(self, *args: Tuple[Any, ...]):
         raise SyntaxError("This is an utility class.")
 
     @staticmethod
-    def add_report(report: Report) -> bool:
-        with MariaDb() as mariadb:
-            return mariadb.execute(
-                query="""
-                INSERT INTO `sin_subsystems_reports` (
-                    `subsystem_id`, `instant_record`,
-                    `instant_load_following`
-                ) VALUES (?, ?, ?)
-                """,
-                data=report.serialize_data(),
-            )
+    def to_dataframe(reports: List[Report]) -> DataFrame:
+        return DataFrame(
+            data=[report.serialize_data() for report in reports],
+            columns=["instant_record", "instant_load_following"],
+        )
+
+
+class MariaDbUtils(object):
+    def __init__(self, *args: Tuple[Any, ...]):
+        raise SyntaxError("This is an utility class.")
 
     @staticmethod
     def add_reports(reports: List[Report]) -> bool:
