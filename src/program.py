@@ -16,6 +16,7 @@ from ons_data_mining import (
     fetch_open_data_reports,
     update_all_open_data_reports,
 )
+from warnings import simplefilter
 
 import os
 
@@ -48,9 +49,14 @@ if __name__ == "__main__":
         "format": vars(log_fmt).get("_fmt"),
         "datefmt": "%Y-%m-%d %H:%M:%S",
         "level": INFO,
+        "encoding": "utf8",
     }
     basicConfig(**log_config)
     disable_warnings()
+
+    # DatetimeProperties.to_pydatetime is deprecated:
+    # https://community.plotly.com/t/datetimeproperties-to-pydatetime-is-deprecated/78293/4
+    simplefilter("ignore", FutureWarning)
 
     exit_status_flag: int = EX_OK
 
