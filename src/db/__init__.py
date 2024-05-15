@@ -1,6 +1,6 @@
 from datetime import datetime
 from logging import warning
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Sequence, Tuple
 from mariadb import Connection, Cursor
 from pandas import DataFrame
 from settings import Settings
@@ -72,6 +72,28 @@ class Report(object):
         }
 
 
+class Subsystem(object):
+    def __init__(self, subsystem_id: str, subsystem_name: str):
+        self.__subsystem_id: str = subsystem_id
+        self.__subsystem_name: str = subsystem_name
+
+    @property
+    def subsystem_id(self) -> str:
+        return self.__subsystem_id
+
+    @subsystem_id.setter
+    def subsystem_id(self, subsystem_id: str) -> None:
+        self.__subsystem_id = subsystem_id
+
+    @property
+    def subsystem_name(self) -> str:
+        return self.__subsystem_name
+
+    @subsystem_name.setter
+    def subsystem_name(self, subsystem_name: str) -> None:
+        self.__subsystem_name = subsystem_name
+
+
 class ReportUtils(object):
     def __init__(self, *args: Tuple[Any, ...]):
         raise SyntaxError("This is an utility class.")
@@ -112,6 +134,13 @@ class MariaDbUtils(object):
             return count_reports == 0
 
     @staticmethod
+    def fetch_subsystems() -> Iterable[Subsystem]:
+        with MariaDb() as mariadb:
+            cursor: Cursor = mariadb.execute(query="SELECT * FROM `sin_subsystems`")
+            for args in cursor:
+                yield Subsystem(*args)
+
+    @staticmethod
     def fetch_subsystem_name_by_id(subsystem_id: str) -> str:
         with MariaDb() as mariadb:
             cursor: Cursor = mariadb.execute(
@@ -126,7 +155,7 @@ class MariaDbUtils(object):
             return subsystem_name
 
     @staticmethod
-    def fetch_reports_by_subsystem_id(subsystem_id: str) -> List[Report]:
+    def fetch_reports_by_subsystem_id(subsystem_id: str) -> Iterable[Report]:
         with MariaDb() as mariadb:
             cursor: Cursor = mariadb.execute(
                 query="SELECT * FROM `sin_subsystems_reports` WHERE `subsystem_id`=?",
@@ -136,7 +165,7 @@ class MariaDbUtils(object):
                 yield Report(*args[1:])
 
     @staticmethod
-    def fetch_distinct_instant_record_years() -> List[int]:
+    def fetch_distinct_instant_record_years() -> Iterable[int]:
         if MariaDbUtils.is_empty_reports():
             yield None
 
