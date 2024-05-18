@@ -11,7 +11,7 @@ api_responses:
 # Example:
 #   {404: {"description": "Not found!"}}
     404:
-        description:
+        description: Not found!
 open_data_ons:
     url: https://dados.ons.org.br/dataset/carga-energia
     download_dir: ../.temp
