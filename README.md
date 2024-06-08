@@ -10,7 +10,7 @@ O repositório tem como objetivo demonstrar o código fonte utilizado no projeto
 
 ## Resumo
 
-Este Trabalho de Conclusão de Curso, tem como objetivo explicitar a necessidade da coleta de dados dos boletins gerados pelo Operador Nacional do Sistema Elétrico (ONS), para fins de predição de incidentes de sobrecarga energética em Unidades Hidrelétricas (UHEs) de acordo com as regulações normativas da Agência Nacional de Energia Elétrica (ANEEL) através de tecnologias de Data Mining para mineração de dados extraídos por robôs programáveis, nos quais utilizam frameworks de Web Scraping. Os possíveis incidentes nas UHEs serão detectáveis por análises correlativas e classificatórias, além de serem norteados pelas normas da ANEEL quanto a sua detecção e prevenção.
+Este Trabalho de Conclusão de Curso, tem como objetivo explicitar a necessidade da coleta de dados dos boletins gerados pelo Operador Nacional do Sistema Elétrico (ONS), para fins de predição de incidentes de sobrecarga energética em Unidades Hidrelétricas (UHEs) de acordo com as regulações normativas da Agência Nacional de Energia Elétrica (ANEEL) através de tecnologias de Data Mining para mineração de dados extraídos por robô programável, no qual utiliza frameworks de Web Scraping. Os possíveis incidentes nas UHEs serão detectáveis por análises correlativas e classificatórias, além de serem norteados pelas normas da ANEEL quanto a sua detecção e prevenção.
 
 **Palavras-chave:** ONS; ANEEL; Data Mining; Web Scraping; Web Crawling; prevenção contra incidentes em UHEs; análise correlativa de dados em boletins do ONS; análise classificatória e preditiva de dados em boletins do ONS.
 
