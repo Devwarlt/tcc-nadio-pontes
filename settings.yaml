@@ -26,7 +26,7 @@ web_scrapping:
     # Recommended 'fetch_period_threshold' is above 48 hours.
     # The main reason is due manual update of latest dataset.
     fetch_period_threshold:
-        hours: 48
+        hours: 24
     driver_name: firefox
     headless: true
     binary_location: C:\Webdriver\bin\Firefox\geckodriver.exe
