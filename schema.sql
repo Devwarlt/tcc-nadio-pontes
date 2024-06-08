@@ -18,22 +18,8 @@ CREATE TABLE IF NOT EXISTS `sin_subsystems_reports` (
 	PRIMARY KEY (`id`)
 ) Engine=InnoDB;
 
-CREATE TABLE IF NOT EXISTS `sin_subsystems_foresight` (
-	`id` INT AUTO_INCREMENT,
-	`subsystem_id` VARCHAR(2) NOT NULL,
-	`instant_record` DATETIME NOT NULL,
-	`instant_load_following` FLOAT NOT NULL,
-	PRIMARY KEY (`id`)
-) Engine=InnoDB;
-
 ALTER TABLE `sin_subsystems_reports`
 	ADD CONSTRAINT `sin_subsystems_reports`
-	FOREIGN KEY (`subsystem_id`)
-	REFERENCES `sin_subsystems` (`id`)
-	ON DELETE CASCADE;
-
-ALTER TABLE `sin_subsystems_foresight`
-	ADD CONSTRAINT `sin_subsystems_foresight`
 	FOREIGN KEY (`subsystem_id`)
 	REFERENCES `sin_subsystems` (`id`)
 	ON DELETE CASCADE;
