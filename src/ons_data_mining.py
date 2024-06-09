@@ -85,7 +85,7 @@ def fetch_open_data_reports(
     latest_instant_record: datetime = MariaDbUtils.fetch_latest_instant_record()
     if (
         current_date.day
-        > (latest_instant_record + timedelta(**fetch_period_threshold_settings)).day
+        <= (latest_instant_record + timedelta(**fetch_period_threshold_settings)).day
     ):
         next_check_eta: timedelta = current_date - (
             latest_instant_record + timedelta(**fetch_period_threshold_settings)
